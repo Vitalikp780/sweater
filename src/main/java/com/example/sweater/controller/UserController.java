@@ -39,10 +39,10 @@ public class UserController {
     public String userSave(
             @RequestParam String username,
             @RequestParam Map<String, String> form,
-            @RequestParam("user.id") User user){
+            @RequestParam("userId") User user){
         user.setUsername(username);
         Set<String> roles = Arrays.stream(Role.values())
-                .map(Role::getAuthority)
+                .map(Role::name)
                 .collect(Collectors.toSet());
         user.getRoles().clear();
 
