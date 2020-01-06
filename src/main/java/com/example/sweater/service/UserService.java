@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -21,9 +22,17 @@ public class UserService implements UserDetailsService {
     @Autowired
     private MailSender mailSender;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username);
+       User user = userRepository.findByUsername(username);
+
+       if(user == null){
+           throw new UsernameNotFoundException("User not found");
+       }
+        return user;
     }
 
     public boolean addUser(User user) {
@@ -35,6 +44,8 @@ public class UserService implements UserDetailsService {
         user.setActive(true);
         user.setRoles(Collections.singleton(Role.USER));
         user.setActivationCode(UUID.randomUUID().toString());
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         userRepository.save(user);
 
         sendMessage(user);
@@ -70,6 +81,7 @@ public class UserService implements UserDetailsService {
 
     public void saveUser(User user, String username, Map<String, String> form) {
         user.setUsername(username);
+
         Set<String> roles = Arrays.stream(Role.values())
                 .map(Role::name)
                 .collect(Collectors.toSet());
@@ -88,7 +100,8 @@ public class UserService implements UserDetailsService {
         String userEmail = user.getEmail();
 
         Boolean isEmailChanged = (email != null && !email.equals(userEmail))
-                || (userEmail != null && userEmail.equals(email));
+                || (userEmail != null && !userEmail.equals(email));
+
         if(isEmailChanged){
             user.setEmail(email);
 
